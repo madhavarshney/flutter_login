@@ -1,5 +1,7 @@
 library flutter_login;
 
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/scheduler.dart' show timeDilation;
 import 'package:flutter/foundation.dart';
@@ -89,10 +91,17 @@ class _Header extends StatelessWidget {
     final theme = Theme.of(context);
     final displayLogo = logoPath != null;
     Widget logo = displayLogo
-        ? Image.asset(
-            logoPath,
-            filterQuality: FilterQuality.high,
-            height: 125,
+        ? CircleAvatar(
+            backgroundColor: Colors.white,
+            radius: 50,
+            child: Transform.rotate(
+              angle: -3.141592 / 4,
+              child: Image.asset(
+                logoPath,
+                filterQuality: FilterQuality.high,
+                height: 50,
+              ),
+            ),
           )
         : NullWidget();
 
@@ -166,7 +175,7 @@ class FlutterLogin extends StatefulWidget {
   }) : super(key: key);
 
   /// Called when the user hit the submit button when in sign up mode
-  final AuthCallback onSignup;
+  final SignupCallback onSignup;
 
   /// Called when the user hit the submit button when in login mode
   final AuthCallback onLogin;
@@ -481,10 +490,15 @@ class _FlutterLoginState extends State<FlutterLogin>
     final loginTheme = widget.theme ?? LoginTheme();
     final theme = _mergeTheme(theme: Theme.of(context), loginTheme: loginTheme);
     final deviceSize = MediaQuery.of(context).size;
-    final headerHeight = deviceSize.height * .3;
+    final headerHeight = deviceSize.height * .27;
+    // final headerHeight = deviceSize.height * .3;
     const logoMargin = 15;
     const cardInitialHeight = 300;
-    final cardTopPosition = deviceSize.height / 2 - cardInitialHeight / 2;
+    final cardTopPosition = max(
+      headerHeight + logoMargin + MediaQuery.of(context).padding.top,
+      deviceSize.height / 2 - cardInitialHeight / 2,
+    );
+    // final cardTopPosition = deviceSize.height / 2 - cardInitialHeight / 2;
     final emailValidator =
         widget.emailValidator ?? FlutterLogin.defaultEmailValidator;
     final passwordValidator =

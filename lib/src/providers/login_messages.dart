@@ -4,6 +4,7 @@ class LoginMessages with ChangeNotifier {
   LoginMessages({
     this.usernameHint: defaultUsernameHint,
     this.passwordHint: defaultPasswordHint,
+    this.displayNameHint: defaultDisplayNameHint,
     this.confirmPasswordHint: defaultConfirmPasswordHint,
     this.forgotPasswordButton: defaultForgotPasswordButton,
     this.loginButton: defaultLoginButton,
@@ -14,10 +15,18 @@ class LoginMessages with ChangeNotifier {
     this.goBackButton: defaultGoBackButton,
     this.confirmPasswordError: defaultConfirmPasswordError,
     this.recoverPasswordSuccess: defaultRecoverPasswordSuccess,
+    this.confirmSignupIntro: defaultConfirmSignupIntro,
+    this.confirmationCodeHint: defaultConfirmationCodeHint,
+    this.confirmationCodeValidationError: defaultConfirmationCodeValidationError,
+    this.resendCodeButton: defaultResendCodeButton,
+    this.resendCodeSuccess: defaultResendCodeSuccess,
+    this.confirmSignupButton: defaultConfirmSignupButton,
+    this.confirmSignupSuccess: defaultConfirmSignupSuccess,
   });
 
   static const defaultUsernameHint = 'Email';
   static const defaultPasswordHint = 'Password';
+  static const defaultDisplayNameHint = 'Your Name';
   static const defaultConfirmPasswordHint = 'Confirm Password';
   static const defaultForgotPasswordButton = 'Forgot Password?';
   static const defaultLoginButton = 'LOGIN';
@@ -30,11 +39,27 @@ class LoginMessages with ChangeNotifier {
   static const defaultConfirmPasswordError = 'Password do not match!';
   static const defaultRecoverPasswordSuccess = 'An email has been sent';
 
+  // static const defaultConfirmSignupIntro =
+  //     'A confirmation code was sent to your email. ' +
+  //         'Please enter the code to confirm your account.';
+  static const defaultConfirmSignupIntro = 'Please enter your profile details.';
+  static const defaultConfirmationCodeHint = 'Confirmation Code';
+  static const defaultConfirmationCodeValidationError =
+      'Confirmation code is empty';
+  static const defaultResendCodeButton = 'Resend Code';
+  static const defaultResendCodeSuccess = 'A new email has been sent.';
+  // static const defaultConfirmSignupButton = 'CONFIRM';
+  static const defaultConfirmSignupButton = 'SIGNUP';
+  static const defaultConfirmSignupSuccess = 'Account confirmed.';
+
   /// Hint text of the user name [TextField]
   final String usernameHint;
 
   /// Hint text of the password [TextField]
   final String passwordHint;
+
+  /// Hint text of the display name [TextField]
+  final String displayNameHint;
 
   /// Hint text of the confirm password [TextField]
   final String confirmPasswordHint;
@@ -67,4 +92,25 @@ class LoginMessages with ChangeNotifier {
 
   /// The success message to show after submitting recover password
   final String recoverPasswordSuccess;
+
+  /// The intro text for the confirm signup card
+  final String confirmSignupIntro;
+
+  /// Hint text of the confirmation code for confirming signup
+  final String confirmationCodeHint;
+
+  /// The validation error message to show for an empty confirmation code
+  final String confirmationCodeValidationError;
+
+  /// Resend code button's label
+  final String resendCodeButton;
+
+  /// The success message to show after resending confirmation code
+  final String resendCodeSuccess;
+
+  /// Confirm signup button's label
+  final String confirmSignupButton;
+
+  /// The success message to show after confirming signup
+  final String confirmSignupSuccess;
 }

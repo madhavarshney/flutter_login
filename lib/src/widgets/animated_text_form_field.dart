@@ -36,6 +36,7 @@ class AnimatedTextFormField extends StatefulWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.keyboardType,
+    this.textCapitalization,
     this.textInputAction,
     this.obscureText = false,
     this.controller,
@@ -56,6 +57,7 @@ class AnimatedTextFormField extends StatefulWidget {
   final Widget prefixIcon;
   final Widget suffixIcon;
   final TextInputType keyboardType;
+  final TextCapitalization textCapitalization;
   final TextInputAction textInputAction;
   final bool obscureText;
   final TextEditingController controller;
@@ -214,6 +216,7 @@ class _AnimatedTextFormFieldState extends State<AnimatedTextFormField> {
       onSaved: widget.onSaved,
       validator: widget.validator,
       enabled: widget.enabled,
+      textCapitalization: widget.textCapitalization ?? TextCapitalization.none,
     );
 
     if (widget.loadingController != null) {

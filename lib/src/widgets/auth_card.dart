@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_login/src/widgets/signup_details_card.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:transformer_page_view/transformer_page_view.dart';
@@ -46,6 +47,9 @@ class AuthCardState extends State<AuthCard> with TickerProviderStateMixin {
   var _isLoadingFirstTime = true;
   var _pageIndex = 0;
   static const cardSizeScaleEnd = .2;
+
+  List<Widget> _allCards;
+  List<Widget> _visibleCards;
 
   TransformerPageController _pageController;
   AnimationController _formLoadingController;
@@ -114,6 +118,16 @@ class AuthCardState extends State<AuthCard> with TickerProviderStateMixin {
       parent: _routeTransitionController,
       curve: Interval(.72727272, 1 /* ~300ms */, curve: Curves.easeInOutCubic),
     ));
+  }
+
+  @override
+  void didChangeDependencies() {
+    if (_visibleCards == null) {
+      final theme = Theme.of(context);
+      _allCards = _buildCards(theme);
+      _visibleCards = _buildCards(theme);
+    }
+    super.didChangeDependencies();
   }
 
   @override
@@ -257,6 +271,108 @@ class AuthCardState extends State<AuthCard> with TickerProviderStateMixin {
     );
   }
 
+    /// jump to any card with animation; call this instead of _switchRecovery()
+  /// when you need to skip over cards; example: you can jump directly from
+  /// index 0 to index 3 with smooth animation
+  void _jumpToCard(ThemeData theme, int targetIndex) async {
+    final auth = Provider.of<Auth>(context, listen: false);
+
+    int currentIndex = _pageController.page.round();
+    if (currentIndex == targetIndex) {
+      return;
+    }
+    _swapChildren(currentIndex, targetIndex);
+    await _quickJump(currentIndex, targetIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshChildren(theme);
+      _pageIndex = targetIndex;
+      auth.isRecover = true;
+    });
+  }
+
+  void _swapChildren(int currentIndex, int targetIndex) {
+    List<Widget> newVisibleCards = [];
+    newVisibleCards.addAll(_allCards);
+
+    if (targetIndex > currentIndex) {
+      newVisibleCards[currentIndex + 1] = _visibleCards[targetIndex];
+    } else if (targetIndex < currentIndex) {
+      newVisibleCards[currentIndex - 1] = _visibleCards[targetIndex];
+    }
+
+    setState(() {
+      _visibleCards = newVisibleCards;
+    });
+  }
+
+  Future _quickJump(int currentIndex, int targetIndex) async {
+    int quickJumpTarget;
+
+    if (targetIndex > currentIndex) {
+      quickJumpTarget = currentIndex + 1;
+    } else if (targetIndex < currentIndex) {
+      quickJumpTarget = currentIndex - 1;
+    }
+
+    await _pageController.animateToPage(
+      quickJumpTarget,
+      curve: Curves.ease,
+      duration: Duration(milliseconds: 500),
+    );
+
+    _pageController.jumpToPage(targetIndex);
+  }
+
+  void _refreshChildren(ThemeData theme) {
+    setState(() {
+      _visibleCards = _buildCards(theme);
+    });
+  }
+
+  List<Widget> _buildCards(ThemeData theme) {
+    return <Widget>[
+      _buildCard(theme, 0),
+      _buildCard(theme, 1),
+      _buildCard(theme, 2),
+    ];
+  }
+
+  Widget _buildCard(ThemeData theme, int index) {
+    switch (index) {
+      case 0:
+        return _buildLoadingAnimator(
+          theme: theme,
+          child: _LoginCard(
+            key: _cardKey,
+            loadingController: _isLoadingFirstTime
+                ? _formLoadingController
+                : (_formLoadingController..value = 1.0),
+            emailValidator: widget.emailValidator,
+            passwordValidator: widget.passwordValidator,
+            onSwitchRecoveryPassword: () => _switchRecovery(true),
+            onSwitchConfirmSignup: () => _jumpToCard(theme, 2),
+            onSubmitCompleted: () {
+              _forwardChangeRouteAnimation().then((_) {
+                widget.onSubmitCompleted();
+              });
+            },
+          ),
+        );
+
+      case 1:
+        return _RecoverCard(
+          emailValidator: widget.emailValidator,
+          onSwitchLogin: () => _switchRecovery(false),
+        );
+
+      case 2:
+        return SignupDetailsCard(
+          onBack: () => _jumpToCard(theme, 0),
+          onSubmitCompleted: widget.onSubmitCompleted,
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -275,32 +391,9 @@ class AuthCardState extends State<AuthCard> with TickerProviderStateMixin {
         index: _pageIndex,
         transformer: CustomPageTransformer(),
         itemBuilder: (BuildContext context, int index) {
-          final child = (index == 0)
-              ? _buildLoadingAnimator(
-                  theme: theme,
-                  child: _LoginCard(
-                    key: _cardKey,
-                    loadingController: _isLoadingFirstTime
-                        ? _formLoadingController
-                        : (_formLoadingController..value = 1.0),
-                    emailValidator: widget.emailValidator,
-                    passwordValidator: widget.passwordValidator,
-                    onSwitchRecoveryPassword: () => _switchRecovery(true),
-                    onSubmitCompleted: () {
-                      _forwardChangeRouteAnimation().then((_) {
-                        widget.onSubmitCompleted();
-                      });
-                    },
-                  ),
-                )
-              : _RecoverCard(
-                  emailValidator: widget.emailValidator,
-                  onSwitchLogin: () => _switchRecovery(false),
-                );
-
           return Align(
             alignment: Alignment.topCenter,
-            child: child,
+            child: _visibleCards[index],
           );
         },
       ),
@@ -329,6 +422,7 @@ class _LoginCard extends StatefulWidget {
     @required this.emailValidator,
     @required this.passwordValidator,
     @required this.onSwitchRecoveryPassword,
+    @required this.onSwitchConfirmSignup,
     this.onSwitchAuth,
     this.onSubmitCompleted,
   }) : super(key: key);
@@ -337,6 +431,7 @@ class _LoginCard extends StatefulWidget {
   final FormFieldValidator<String> emailValidator;
   final FormFieldValidator<String> passwordValidator;
   final Function onSwitchRecoveryPassword;
+  final Function onSwitchConfirmSignup;
   final Function onSwitchAuth;
   final Function onSubmitCompleted;
 
@@ -351,7 +446,7 @@ class _LoginCardState extends State<_LoginCard> with TickerProviderStateMixin {
   final _confirmPasswordFocusNode = FocusNode();
   final _passwordController = TextEditingController();
 
-  var _authData = {'email': '', 'password': ''};
+  var _authData = {'name': '', 'email': '', 'password': ''};
   var _isLoading = false;
   var _isSubmitting = false;
   var _showShadow = true;
@@ -417,8 +512,6 @@ class _LoginCardState extends State<_LoginCard> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    super.dispose();
-
     _loadingController?.removeStatusListener(handleLoadingAnimationStatus);
     _passwordFocusNode.dispose();
     _confirmPasswordFocusNode.dispose();
@@ -426,6 +519,8 @@ class _LoginCardState extends State<_LoginCard> with TickerProviderStateMixin {
     _switchAuthController.dispose();
     _postSwitchAuthController.dispose();
     _submitController.dispose();
+
+    super.dispose();
   }
 
   void _switchAuthMode() {
@@ -457,14 +552,16 @@ class _LoginCardState extends State<_LoginCard> with TickerProviderStateMixin {
 
     if (auth.isLogin) {
       error = await auth.onLogin(LoginData(
-        name: _authData['email'],
+        email: _authData['email'],
         password: _authData['password'],
       ));
     } else {
-      error = await auth.onSignup(LoginData(
-        name: _authData['email'],
-        password: _authData['password'],
-      ));
+      widget.onSwitchConfirmSignup();
+      // error = await auth.onSignup(SignupData(
+      //   name: _authData['name'],
+      //   email: _authData['email'],
+      //   password: _authData['password'],
+      // ));
     }
 
     // workaround to run after _cardSizeAnimation in parent finished
@@ -484,7 +581,10 @@ class _LoginCardState extends State<_LoginCard> with TickerProviderStateMixin {
       return false;
     }
 
-    widget?.onSubmitCompleted();
+    if (auth.isLogin) {
+      widget?.onSubmitCompleted();
+    }
+    // widget.onSwitchConfirmSignup();
 
     return true;
   }
@@ -528,6 +628,35 @@ class _LoginCardState extends State<_LoginCard> with TickerProviderStateMixin {
       },
       validator: widget.passwordValidator,
       onSaved: (value) => _authData['password'] = value,
+    );
+  }
+
+  Widget _buildDisplayNameField(double width, LoginMessages messages) {
+    final auth = Provider.of<Auth>(context);
+
+    return AnimatedTextFormField(
+      width: width,
+      enabled: auth.isSignup,
+      textCapitalization: TextCapitalization.words,
+      loadingController: _loadingController,
+      inertiaController: _postSwitchAuthController,
+      inertiaDirection: TextFieldInertiaDirection.right,
+      labelText: messages.displayNameHint,
+      prefixIcon: Icon(FontAwesomeIcons.solidUserCircle),
+      textInputAction: TextInputAction.next,
+      // focusNode: _confirmPasswordFocusNode,
+      onFieldSubmitted: (value) {
+        FocusScope.of(context).requestFocus(_confirmPasswordFocusNode);
+      },
+      validator: auth.isSignup
+          ? (value) {
+              if (value.isEmpty) {
+                return 'Please provide your display name';
+              }
+              return null;
+            }
+          : (value) => null,
+      onSaved: (value) => _authData['name'] = value,
     );
   }
 
@@ -624,6 +753,7 @@ class _LoginCardState extends State<_LoginCard> with TickerProviderStateMixin {
             padding: EdgeInsets.only(
               left: cardPadding,
               right: cardPadding,
+              // top: 20,
               top: cardPadding + 10,
             ),
             width: cardWidth,
@@ -637,6 +767,27 @@ class _LoginCardState extends State<_LoginCard> with TickerProviderStateMixin {
               ],
             ),
           ),
+          // ExpandableContainer(
+          //   // padding: EdgeInsets.only(
+          //   //   left: cardPadding,
+          //   //   right: cardPadding,
+          //   //   top: cardPadding + 10,
+          //   // ),
+          //   backgroundColor: theme.accentColor,
+          //   controller: _switchAuthController,
+          //   initialState: isLogin
+          //       ? ExpandableContainerState.shrunk
+          //       : ExpandableContainerState.expanded,
+          //   alignment: Alignment.topLeft,
+          //   color: theme.cardTheme.color,
+          //   width: cardWidth,
+          //   padding: EdgeInsets.symmetric(
+          //     horizontal: cardPadding,
+          //     vertical: 10,
+          //   ),
+          //   onExpandCompleted: () => _postSwitchAuthController.forward(),
+          //   child: _buildDisplayNameField(textFieldWidth, messages),
+          // ),
           ExpandableContainer(
             backgroundColor: theme.accentColor,
             controller: _switchAuthController,

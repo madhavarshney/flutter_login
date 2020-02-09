@@ -13,10 +13,22 @@ class LoginScreen extends StatelessWidget {
 
   Future<String> _loginUser(LoginData data) {
     return Future.delayed(loginTime).then((_) {
-      if (!mockUsers.containsKey(data.name)) {
+      if (!mockUsers.containsKey(data.email)) {
         return 'Username not exists';
       }
-      if (mockUsers[data.name] != data.password) {
+      if (mockUsers[data.email] != data.password) {
+        return 'Password does not match';
+      }
+      return null;
+    });
+  }
+
+  Future<String> _signupUser(SignupData data) {
+    return Future.delayed(loginTime).then((_) {
+      if (!mockUsers.containsKey(data.email)) {
+        return 'Username not exists';
+      }
+      if (mockUsers[data.email] != data.password) {
         return 'Password does not match';
       }
       return null;
@@ -148,15 +160,16 @@ class LoginScreen extends StatelessWidget {
       },
       onLogin: (loginData) {
         print('Login info');
-        print('Name: ${loginData.name}');
+        print('Email: ${loginData.email}');
         print('Password: ${loginData.password}');
         return _loginUser(loginData);
       },
-      onSignup: (loginData) {
+      onSignup: (signupData) {
         print('Signup info');
-        print('Name: ${loginData.name}');
-        print('Password: ${loginData.password}');
-        return _loginUser(loginData);
+        print('Name: ${signupData.name}');
+        print('Email: ${signupData.email}');
+        print('Password: ${signupData.password}');
+        return _signupUser(signupData);
       },
       onSubmitAnimationCompleted: () {
         Navigator.of(context).pushReplacement(FadePageRoute(
